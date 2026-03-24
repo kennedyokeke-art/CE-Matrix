@@ -1,328 +1,292 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
-const LOCK_COL = 7;
-const ROLES_CYCLE = ["R","A","S","C","I","RA",""];
-const ROLE_KEYS = ["CX Dir","CX Mgr","CSM","Tech/Ops","Engineering","Product","Finance","Leadership"];
+const LOCK = 7;
+const CYCLE = ["R","A","S","C","I","RA",""];
+const KEYS = ["CX Dir","CX Mgr","CSM","Tech/Ops","Engineering","Product","Finance","Leadership"];
+
+const BS = {
+  R:  {bg:"#dbeafe",color:"#1e40af",border:"#93c5fd"},
+  A:  {bg:"#ede9fe",color:"#5b21b6",border:"#c4b5fd"},
+  S:  {bg:"#e1f5ee",color:"#085041",border:"#1d9e75"},
+  C:  {bg:"#fef3c7",color:"#92400e",border:"#fcd34d"},
+  I:  {bg:"#f0fdf4",color:"#166534",border:"#86efac"},
+  RA: {bg:"#fce7f3",color:"#9d174d",border:"#f9a8d4"},
+  "": {bg:"#f5f5f3",color:"#ccc",   border:"#e8e8e0"},
+};
 
 const AREAS = [
-  {cat:"Environments, Server & Hosting Data", steps:[
-    "Maintain CMDB (JSM) as single source of truth for customer environments",
-    "Record hosted & on-prem environment data (IP ranges, versions, connectivity)",
+  ["Environments Server and Hosting Data",[
+    "Maintain CMDB as single source of truth for customer environments",
+    "Record hosted and on-prem environment data",
     "Sync customer master from Salesforce to JSM",
-    "Manage environment data lifecycle (onboarding, changes, offboarding)",
+    "Manage environment data lifecycle",
     "Reconstruct Bouncer URI from environment data",
-    "Provide environment selection on case submission (replicated into Salesforce from JSM)",
-  ]},
-  {cat:"Major Incident Management & Customer Communication", steps:[
-    "Declare & manage major incidents in JSM",
+    "Provide environment selection on case submission",
+  ]],
+  ["Major Incident Management and Customer Communication",[
+    "Declare and manage major incidents in JSM",
     "Link affected cases to major incident record",
-    "Publish & maintain customer-facing status page",
-    "Surface active incidents on customer portal & case submission screen",
-    "Bulk-update & close linked cases on incident resolution",
-    "Conduct post-incident review (PIR)",
-  ]},
-  {cat:"Patching Management", steps:[
-    "Receive & manage patching requests (via Jira)",
-    "Check customer patching rules & change request form (CRF) requirements",
-    "Coordinate patch deployment via Bouncer / ring master",
-    "Generate & distribute release notes per patch",
+    "Publish and maintain customer-facing status page",
+    "Surface active incidents on customer portal",
+    "Bulk-update and close linked cases on incident resolution",
+    "Conduct post-incident review",
+  ]],
+  ["Patching Management",[
+    "Receive and manage patching requests via Jira",
+    "Check customer patching rules and CRF requirements",
+    "Coordinate patch deployment via Bouncer and ring master",
+    "Generate and distribute release notes per patch",
     "Update CMDB with patch outcome",
-    "Communicate patching windows & outcomes to customers",
-  ]},
-  {cat:"Bouncer", steps:[
-    "Launch Bouncer connection from case or portal (Power Apps UI)",
-    "Construct & encrypt connection URI from CMDB environment data",
-    "Authenticate associate access via role-based permissions (AD groups)",
-    "Log & audit all Bouncer connection activity",
+    "Communicate patching windows and outcomes to customers",
+  ]],
+  ["Bouncer",[
+    "Launch Bouncer connection from case or portal via Power Apps",
+    "Construct and encrypt connection URI from CMDB environment data",
+    "Authenticate associate access via role-based permissions",
+    "Log and audit all Bouncer connection activity",
     "Support password reveal for authorised roles",
-  ]},
-  {cat:"CSM Activity Tracking", steps:[
-    "Log CSM interactions & activities against customer accounts",
-    "Track & report CSM activity volumes and outcomes",
+  ]],
+  ["CSM Activity Tracking",[
+    "Log CSM interactions and activities against customer accounts",
+    "Track and report CSM activity volumes and outcomes",
     "Escalate at-risk accounts identified during activity review",
     "Set and monitor CSM activity targets",
-  ]},
-  {cat:"Release Notes", steps:[
-    "Engineering generates release note artifact per patch (PDF/HTML)",
+  ]],
+  ["Release Notes",[
+    "Engineering generates release note artifact per patch",
     "Store release notes in Jira linked to patch",
-    "Publish release notes to customer portal (filtered by entitlement)",
+    "Publish release notes to customer portal filtered by entitlement",
     "Notify relevant customers when release notes are available",
-    "Allow customers to subscribe to & view their release notes",
-  ]},
-  {cat:"User Change Requests", steps:[
-    "Customer submits user change request via portal (password reset, user creation)",
-    "Route request to Nelson via API (automated, zero-touch)",
+    "Allow customers to subscribe to and view their release notes",
+  ]],
+  ["User Change Requests",[
+    "Customer submits user change request via portal",
+    "Route request to Nelson via API automated zero-touch",
     "Confirm completion and notify customer",
-    "Audit & log all user change requests",
-  ]},
-  {cat:"Entitlements", steps:[
-    "Auto-assign SLA entitlement to case on creation (via logic table / contract allocation)",
-    "Define SLA milestones (first response, solution provided) per entitlement",
-    "Manage entitlements for financier-sold products (manual sharing rules via apex trigger)",
-    "Review & validate entitlements at renewal or contract change",
+    "Audit and log all user change requests",
+  ]],
+  ["Entitlements",[
+    "Auto-assign SLA entitlement to case on creation",
+    "Define SLA milestones per entitlement",
+    "Manage entitlements for financier-sold products",
+    "Review and validate entitlements at renewal or contract change",
     "Report on entitlement usage and SLA performance",
-  ]},
-  {cat:"Case Management", steps:[
-    "Log & triage cases from all intake channels (portal, chat, phone, automated monitoring)",
-    "Route cases via Omni-Channel using product & skill-based routing",
-    "Manage case lifecycle (in progress, solution provided, awaiting confirmation, closed)",
-    "Handle case sharing across customer hierarchy (standard + sharing sets)",
-    "Swarm on complex cases; escalate internally where needed",
+  ]],
+  ["Case Management",[
+    "Log and triage cases from all intake channels",
+    "Route cases via Omni-Channel using skill-based routing",
+    "Manage case lifecycle through to closure",
+    "Handle case sharing across customer hierarchy",
+    "Swarm on complex cases and escalate internally",
     "Link cases to Jira for defect or infrastructure resolution",
-    "Track & report case trends, SLA performance, and quality metrics",
-    "Manage confidential cases (record type restriction)",
-    "Support third-party / partner case access (manual sharing per junction object)",
-  ]},
-  {cat:"Associate Portal", steps:[
-    "Allow internal users without Salesforce licence to create & manage cases",
-    "Provide access to customer account & environment data for associates",
+    "Track and report case trends and SLA performance",
+    "Support third-party and partner case access",
+  ]],
+  ["Associate Portal",[
+    "Allow internal users without Salesforce licence to create and manage cases",
+    "Provide access to customer account and environment data for associates",
     "Enable Bouncer launch for associates without full Salesforce access",
     "Govern associate access by role and persona",
-  ]},
-  {cat:"Advanced Resource Planning", steps:[
+  ]],
+  ["Advanced Resource Planning",[
     "Forecast customer support demand by volume and skill",
     "Allocate CSM and analyst capacity against forecast",
     "Manage skill definitions and Omni-Channel skill assignments",
     "Report on resource utilisation and capacity gaps",
-  ]},
-  {cat:"Remediation Management", steps:[
-    "Flag remediation opportunity at case closure (CRI process)",
-    "Create & link remediation records to support cases",
+  ]],
+  ["Remediation Management",[
+    "Flag remediation opportunity at case closure",
+    "Create and link remediation records to support cases",
     "Analyse remediation volume and cost by product and market",
-    "Collaborate with Product, Engineering & PS to resolve root causes",
+    "Collaborate with Product Engineering and PS to resolve root causes",
     "Track remediation outcomes and case reduction impact",
-  ]},
-  {cat:"SR Bookings", steps:[
+  ]],
+  ["SR Bookings",[
     "Log outbound appointment bookings for managed service team",
-    "Record booking outcomes (attended, no-show, rebooked)",
+    "Record booking outcomes attended no-show rebooked",
     "Lock booking records after 4-day outcome window",
     "Report booking volumes and outcomes to customers",
-  ]},
-  {cat:"Vendor Licences", steps:[
-    "Record third-party licence requirements per product (e.g. Progress, Oracle)",
+  ]],
+  ["Vendor Licences",[
+    "Record third-party licence requirements per product",
     "Procure vendor licences at point of customer onboarding",
     "Audit licence usage against active customer base",
     "Cancel or transfer licences on customer offboarding",
     "Report licence costs per product for margin analysis",
-  ]},
-  {cat:"Escalation Management", steps:[
-    "Receive & log customer escalation",
+  ]],
+  ["Escalation Management",[
+    "Receive and log customer escalation",
     "Assess escalation severity and route to appropriate owner",
     "Coordinate cross-functional escalation response",
     "Communicate updates and resolution to customer",
-    "Conduct escalation retrospective; feed learnings into remediation",
-  ]},
-  {cat:"CSM Risk Management", steps:[
-    "Identify at-risk accounts via CSM activity, case trends and NPS data",
+    "Conduct escalation retrospective and feed learnings into remediation",
+  ]],
+  ["CSM Risk Management",[
+    "Identify at-risk accounts via CSM activity case trends and NPS data",
     "Log and maintain risk register per account",
     "Define and track risk mitigation actions",
     "Report risk status to leadership",
-    "Evaluate tooling for CSM / risk platform (e.g. Planhat)",
-  ]},
-  {cat:"Service Credits", steps:[
+    "Evaluate tooling for CSM and risk platform",
+  ]],
+  ["Service Credits",[
     "Identify service credit eligibility based on SLA breach",
     "Calculate credit value against contract terms",
     "Obtain approval and apply credit to customer account",
     "Notify customer and record credit in reporting",
-  ]},
+  ]],
 ];
 
-function buildInitialData() {
-  const rows = [];
-  AREAS.forEach(area => {
-    area.steps.forEach(step => {
-      rows.push({
-        cat: area.cat,
-        name: step,
-        vals: ROLE_KEYS.map((_, i) => i === LOCK_COL ? "A" : ""),
-        dimmed: ROLE_KEYS.map(() => false),
-      });
-    });
-  });
-  return rows;
+function buildRows() {
+  const out = [];
+  AREAS.forEach(([cat, steps]) => steps.forEach(name => out.push({
+    cat, name,
+    vals: KEYS.map((_, i) => i === LOCK ? "A" : ""),
+    dim:  KEYS.map(() => false),
+  })));
+  return out;
 }
 
-const BADGE_STYLES = {
-  R:  {bg:"#dbeafe", color:"#1e40af", border:"#93c5fd"},
-  A:  {bg:"#ede9fe", color:"#5b21b6", border:"#c4b5fd"},
-  S:  {bg:"#e1f5ee", color:"#085041", border:"#1d9e75"},
-  C:  {bg:"#fef3c7", color:"#92400e", border:"#fcd34d"},
-  I:  {bg:"#f0fdf4", color:"#166534", border:"#86efac"},
-  RA: {bg:"#fce7f3", color:"#9d174d", border:"#f9a8d4"},
-  "": {bg:"#f5f5f3", color:"#ccc",    border:"#e8e8e0"},
-};
-
-function Badge({ val, dimmed, onClick }) {
-  const s = BADGE_STYLES[val] || BADGE_STYLES[""];
+function Badge({ v, dim, onClick }) {
+  const s = BS[v] || BS[""];
   return (
     <span onClick={onClick} style={{
       display:"inline-flex", alignItems:"center", justifyContent:"center",
       minWidth:26, height:22, borderRadius:5, fontWeight:600,
-      fontSize:val==="RA"?10:11, cursor:"pointer",
+      fontSize: v === "RA" ? 10 : 11, cursor:"pointer",
       border:"1px solid "+s.border, padding:"0 4px", userSelect:"none",
-      background:s.bg, color:s.color, opacity:dimmed?0.3:1, transition:"transform .1s",
-    }} title="Click to cycle · Shift+click to dim">{val || "·"}</span>
+      background:s.bg, color:s.color, opacity: dim ? 0.3 : 1,
+    }}>{v || "·"}</span>
   );
 }
 
-const ACCOUNTS = {"cx.mgr":"pass123","csm.lead":"pass123","admin":"admin123"};
-
 export default function App() {
-  const [rows, setRows] = useState(buildInitialData);
-  const [roleFilter, setRoleFilter] = useState("");
-  const [catFilter, setCatFilter] = useState("");
-  const [panel, setPanel] = useState(null);
+  const [rows, setRows]         = useState(buildRows);
+  const [catF, setCatF]         = useState("");
+  const [roleF, setRoleF]       = useState("");
+  const [panel, setPanel]       = useState(null);
   const [noteText, setNoteText] = useState("");
-  const [notes, setNotes] = useState([]);
-  const [auditLog, setAuditLog] = useState([]);
-  const [pending, setPending] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [showSave, setShowSave] = useState(false);
-  const [mUser, setMUser] = useState("");
-  const [mPass, setMPass] = useState("");
-  const [mErr, setMErr] = useState("");
+  const [notes, setNotes]       = useState([]);
+  const [log, setLog]           = useState([]);
+  const [pending, setPending]   = useState([]);
+  const [user, setUser]         = useState(null);
+  const [saving, setSaving]     = useState(false);
+  const [mu, setMu]             = useState("");
+  const [mp, setMp]             = useState("");
+  const [merr, setMerr]         = useState("");
 
-  const cycleCell = useCallback((ri, ci, shiftKey) => {
-    if (ci === LOCK_COL) return;
-    setRows(prev => {
-      const next = prev.map((r, i) => {
-        if (i !== ri) return r;
-        const newVals = [...r.vals];
-        const newDimmed = [...r.dimmed];
-        if (shiftKey) {
-          newDimmed[ci] = !newDimmed[ci];
-        } else {
-          const idx = ROLES_CYCLE.indexOf(newVals[ci]);
-          newVals[ci] = ROLES_CYCLE[(idx + 1) % ROLES_CYCLE.length];
-        }
-        return {...r, vals: newVals, dimmed: newDimmed};
-      });
-      if (!shiftKey) {
-        const from = prev[ri].vals[ci];
-        const to = next[ri].vals[ci];
-        setPending(p => [...p, {row: prev[ri].name, col: ROLE_KEYS[ci], from, to, ts: new Date().toISOString()}]);
+  const cycle = (ri, ci, shift) => {
+    if (ci === LOCK) return;
+    setRows(prev => prev.map((r, i) => {
+      if (i !== ri) return r;
+      const nv = [...r.vals], nd = [...r.dim];
+      if (shift) { nd[ci] = !nd[ci]; }
+      else {
+        const nx = CYCLE[(CYCLE.indexOf(nv[ci]) + 1) % CYCLE.length];
+        setPending(p => [...p, {row:r.name, col:KEYS[ci], from:nv[ci], to:nx, ts:new Date().toISOString()}]);
+        nv[ci] = nx;
       }
-      return next;
-    });
-  }, []);
+      return {...r, vals:nv, dim:nd};
+    }));
+  };
 
-  const cats = [...new Set(AREAS.map(a => a.cat))];
-  const visibleRows = rows.filter(r => (!catFilter || r.cat === catFilter));
-  const total = rows.length * (ROLE_KEYS.length - 1);
-  const filled = rows.reduce((a, r) => a + r.vals.filter((v, i) => i !== LOCK_COL && v !== "").length, 0);
-  const pct = total > 0 ? Math.round(filled / total * 100) : 0;
-  const visibleRoles = ROLE_KEYS.filter(r => !roleFilter || r === roleFilter);
-
-  const doSave = () => {
-    if (!ACCOUNTS[mUser] || ACCOUNTS[mUser] !== mPass) { setMErr("Invalid username or password."); return; }
-    setCurrentUser(mUser);
-    setAuditLog(prev => [...prev, ...pending.map(p => ({...p, user: mUser}))]);
-    setPending([]);
-    setShowSave(false);
-    setMUser(""); setMPass(""); setMErr("");
-    alert("RACI changes saved and logged!");
+  const save = () => {
+    const acc = {"cx.mgr":"pass123","csm.lead":"pass123","admin":"admin123"};
+    if (!acc[mu] || acc[mu] !== mp) { setMerr("Invalid username or password."); return; }
+    setUser(mu);
+    setLog(l => [...l, ...pending.map(p => ({...p, user:mu}))]);
+    setPending([]); setSaving(false); setMu(""); setMp(""); setMerr("");
+    alert("Changes saved and logged!");
   };
 
   const exportCSV = () => {
-    const lines = ["User,Process Step,Stakeholder,From,To,Timestamp",
-      ...auditLog.map(l => [l.user, '"'+l.row+'"', l.col, l.from||"blank", l.to||"blank", l.ts].join(","))];
+    const lines = ["User,Step,Role,From,To,Time",
+      ...log.map(l => [l.user, '"'+l.row+'"', l.col, l.from||"blank", l.to||"blank", l.ts].join(","))];
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([lines.join("\n")], {type:"text/csv"}));
-    a.download = "ce_raci_audit.csv"; a.click();
+    a.href = URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));
+    a.download = "ce_raci.csv"; a.click();
   };
 
-  const saveNote = () => {
-    if (!noteText.trim()) return;
-    setNotes(prev => [...prev, {text: noteText.trim(), who: currentUser||"Anonymous", ts: new Date().toLocaleString()}]);
-    setNoteText("");
-  };
+  const total  = rows.length * (KEYS.length - 1);
+  const filled = rows.reduce((s,r) => s + r.vals.filter((v,i) => i!==LOCK && v).length, 0);
+  const pct    = total ? Math.round(filled/total*100) : 0;
+  const vr     = KEYS.filter(k => !roleF || k === roleF);
+  const vrows  = rows.filter(r => !catF || r.cat === catF);
+  const cats   = [...new Set(AREAS.map(a => a[0]))];
 
-  const hbtn = {background:"none", border:"1px solid #d0d0c8", borderRadius:6, padding:"5px 11px", cursor:"pointer", fontSize:12};
+  const sel  = {border:"1px solid #d0d0c8",borderRadius:6,padding:"4px 8px",fontSize:12,background:"#fff"};
+  const hbtn = {background:"none",border:"1px solid #d0d0c8",borderRadius:6,padding:"5px 11px",cursor:"pointer",fontSize:12};
+  const thS  = (lk) => ({background:lk?"#f0eeff":"#fafaf8",textAlign:"center",fontSize:10,padding:"6px",color:lk?"#5b21b6":"#666",fontWeight:lk?600:400,border:"1px solid #e0e0d8",minWidth:80,whiteSpace:"nowrap"});
+  const tdS  = (lk) => ({textAlign:"center",padding:"4px 3px",minWidth:80,border:"1px solid #e0e0d8",background:lk?"#f9f7ff":"transparent"});
+  const stkyH = {position:"sticky",left:0,background:"#f5f5f3",zIndex:3,padding:"6px 10px",fontSize:12,fontWeight:600,border:"1px solid #e0e0d8",minWidth:280,maxWidth:280};
+  const stkyC = {position:"sticky",left:0,background:"#fff",zIndex:2,padding:"5px 10px",fontSize:12,lineHeight:1.4,border:"1px solid #e0e0d8",minWidth:280,maxWidth:280};
+  const secR  = {background:"#e8e8e4",fontWeight:600,fontSize:11,color:"#444",padding:"5px 10px",textTransform:"uppercase",letterSpacing:".3px"};
 
   let lastCat = null;
 
   return (
-    <div style={{fontFamily:"system-ui,sans-serif", fontSize:13, background:"#f5f5f3", minHeight:"100vh"}}>
-      {/* Header */}
-      <div style={{background:"#fff", borderBottom:"1px solid #e0e0d8", padding:"10px 18px", display:"flex", alignItems:"center", gap:12, flexWrap:"wrap"}}>
-        <span style={{fontWeight:600, fontSize:15, flex:1}}>CE – Customer Experience RACI</span>
+    <div style={{fontFamily:"system-ui,sans-serif",fontSize:13,background:"#f5f5f3",minHeight:"100vh"}}>
+
+      <div style={{background:"#fff",borderBottom:"1px solid #e0e0d8",padding:"10px 18px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <span style={{fontWeight:600,fontSize:15,flex:1}}>CE - Customer Experience RACI</span>
         <button style={hbtn} onClick={() => setPanel(panel==="notes"?null:"notes")}>Notes</button>
-        <button style={hbtn} onClick={() => setPanel(panel==="audit"?null:"audit")}>Audit Log ({auditLog.length})</button>
-        <button style={hbtn} onClick={() => { if (!pending.length){alert("No changes to save.");return;} setShowSave(true); setMErr(""); }}>Save changes</button>
+        <button style={hbtn} onClick={() => setPanel(panel==="audit"?null:"audit")}>Audit ({log.length})</button>
+        <button style={hbtn} onClick={() => { if(!pending.length){alert("No changes to save.");return;} setSaving(true);setMerr(""); }}>Save changes</button>
       </div>
 
-      {/* Toolbar */}
-      <div style={{padding:"10px 18px", background:"#fafaf8", borderBottom:"1px solid #e8e8e0", display:"flex", gap:12, alignItems:"center", flexWrap:"wrap"}}>
-        <label style={{fontSize:12, color:"#666", display:"flex", alignItems:"center", gap:6}}>
-          Area:
-          <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={{border:"1px solid #d0d0c8", borderRadius:6, padding:"4px 8px", fontSize:12, background:"#fff"}}>
+      <div style={{padding:"10px 18px",background:"#fafaf8",borderBottom:"1px solid #e8e8e0",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+        <label style={{fontSize:12,color:"#666",display:"flex",alignItems:"center",gap:6}}>Area:
+          <select style={sel} value={catF} onChange={e=>setCatF(e.target.value)}>
             <option value="">All areas</option>
-            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+            {cats.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         </label>
-        <label style={{fontSize:12, color:"#666", display:"flex", alignItems:"center", gap:6}}>
-          Stakeholder:
-          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} style={{border:"1px solid #d0d0c8", borderRadius:6, padding:"4px 8px", fontSize:12, background:"#fff"}}>
+        <label style={{fontSize:12,color:"#666",display:"flex",alignItems:"center",gap:6}}>Stakeholder:
+          <select style={sel} value={roleF} onChange={e=>setRoleF(e.target.value)}>
             <option value="">All stakeholders</option>
-            {ROLE_KEYS.map(r => <option key={r} value={r}>{r}</option>)}
+            {KEYS.map(k=><option key={k} value={k}>{k}</option>)}
           </select>
         </label>
       </div>
 
-      {/* Progress */}
-      <div style={{padding:"6px 18px", background:"#fff", borderBottom:"1px solid #e8e8e0", display:"flex", alignItems:"center", gap:10}}>
-        <span style={{fontSize:11, color:"#888", whiteSpace:"nowrap"}}>Completion: {pct}%</span>
-        <div style={{flex:1, height:6, background:"#e8e8e0", borderRadius:3, overflow:"hidden"}}>
-          <div style={{height:"100%", width:pct+"%", background:"#7c3aed", borderRadius:3, transition:"width .3s"}}/>
+      <div style={{padding:"6px 18px",background:"#fff",borderBottom:"1px solid #e8e8e0",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:11,color:"#888"}}>{pct}% complete</span>
+        <div style={{flex:1,height:6,background:"#e8e8e0",borderRadius:3,overflow:"hidden"}}>
+          <div style={{height:"100%",width:pct+"%",background:"#7c3aed",borderRadius:3}}/>
         </div>
-        <span style={{fontSize:11, color:"#888", whiteSpace:"nowrap"}}>{filled} / {total} cells filled</span>
+        <span style={{fontSize:11,color:"#888"}}>{filled}/{total}</span>
       </div>
 
-      {/* Legend */}
-      <div style={{display:"flex", gap:8, flexWrap:"wrap", padding:"8px 18px", background:"#fff", borderBottom:"1px solid #e8e8e0"}}>
-        {Object.entries(BADGE_STYLES).filter(([k]) => k).map(([k, s]) => (
-          <span key={k} style={{display:"flex", alignItems:"center", gap:5, fontSize:11, color:"#555"}}>
-            <span style={{display:"inline-flex", alignItems:"center", justifyContent:"center", minWidth:26, height:22, borderRadius:5, fontWeight:600, fontSize:k==="RA"?10:11, border:"1px solid "+s.border, padding:"0 4px", background:s.bg, color:s.color}}>{k}</span>
-            {k==="R"?"Responsible":k==="A"?"Accountable":k==="S"?"Supporting":k==="C"?"Consulted":k==="I"?"Informed":"Resp. & Accountable"}
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",padding:"8px 18px",background:"#fff",borderBottom:"1px solid #e8e8e0"}}>
+        {Object.entries(BS).filter(([k])=>k).map(([k,s])=>(
+          <span key={k} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:"#555"}}>
+            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:26,height:22,borderRadius:5,fontWeight:600,fontSize:k==="RA"?10:11,border:"1px solid "+s.border,padding:"0 4px",background:s.bg,color:s.color}}>{k}</span>
+            {k==="R"?"Responsible":k==="A"?"Accountable":k==="S"?"Supporting":k==="C"?"Consulted":k==="I"?"Informed":"Resp + Accountable"}
           </span>
         ))}
       </div>
-      <div style={{fontSize:10, color:"#aaa", padding:"6px 18px", background:"#fafaf8", borderBottom:"1px solid #e8e8e0"}}>
-        Click any cell to cycle role · Shift+click to dim/undim · Leadership column locked as Accountable
-      </div>
+      <div style={{fontSize:10,color:"#aaa",padding:"5px 18px",background:"#fafaf8",borderBottom:"1px solid #e8e8e0"}}>Click to cycle - Shift+click to dim - Leadership locked as Accountable</div>
 
-      {/* Table */}
-      <div style={{overflowX:"auto", maxHeight:"calc(100vh - 210px)"}}>
-        <table style={{borderCollapse:"collapse", width:"max-content"}}>
+      <div style={{overflowX:"auto",maxHeight:"calc(100vh - 210px)"}}>
+        <table style={{borderCollapse:"collapse",width:"max-content"}}>
           <thead>
             <tr>
-              <th style={{position:"sticky", left:0, background:"#f5f5f3", zIndex:3, padding:"6px 10px", fontSize:12, fontWeight:600, border:"1px solid #e0e0d8", minWidth:280, maxWidth:280}}>Process Step</th>
-              {ROLE_KEYS.map((r, i) => (
-                visibleRoles.includes(r) &&
-                <th key={r} style={{background: i===LOCK_COL?"#f0eeff":"#fafaf8", textAlign:"center", fontSize:10, padding:"6px 6px", color: i===LOCK_COL?"#5b21b6":"#666", fontWeight: i===LOCK_COL?600:400, border:"1px solid #e0e0d8", minWidth:80, whiteSpace:"nowrap"}}>
-                  {r}{i===LOCK_COL?" (A)":""}
-                </th>
-              ))}
+              <th style={stkyH}>Process Step</th>
+              {KEYS.map((k,i)=> vr.includes(k) && <th key={k} style={thS(i===LOCK)}>{k}{i===LOCK?" (A)":""}</th>)}
             </tr>
           </thead>
           <tbody>
-            {visibleRows.map((row, ri) => {
-              const isNewCat = row.cat !== lastCat;
+            {vrows.map((row, vi) => {
+              const ri = rows.indexOf(row);
+              const newCat = row.cat !== lastCat;
               lastCat = row.cat;
-              const globalRi = rows.indexOf(row);
               return (
-                <React.Fragment key={globalRi}>
-                  {isNewCat && (
-                    <tr>
-                      <td colSpan={1 + visibleRoles.length} style={{background:"#e8e8e4", fontWeight:600, fontSize:11, color:"#444", padding:"5px 10px", borderBottom:"1px solid #d8d8d0", letterSpacing:".3px", textTransform:"uppercase"}}>{row.cat}</td>
-                    </tr>
-                  )}
+                <React.Fragment key={ri}>
+                  {newCat && <tr><td colSpan={1+vr.length} style={secR}>{row.cat}</td></tr>}
                   <tr>
-                    <td style={{position:"sticky", left:0, background:"#fff", zIndex:2, padding:"5px 10px", fontSize:12, lineHeight:1.4, border:"1px solid #e0e0d8", minWidth:280, maxWidth:280}}>{row.name}</td>
-                    {ROLE_KEYS.map((r, ci) => (
-                      visibleRoles.includes(r) &&
-                      <td key={ci} style={{textAlign:"center", padding:"4px 3px", minWidth:80, border:"1px solid #e0e0d8", background: ci===LOCK_COL?"#f9f7ff":""}}>
-                        <Badge val={row.vals[ci]} dimmed={row.dimmed[ci]} onClick={e => cycleCell(globalRi, ci, e.shiftKey)} />
+                    <td style={stkyC}>{row.name}</td>
+                    {KEYS.map((k,ci)=> vr.includes(k) && (
+                      <td key={ci} style={tdS(ci===LOCK)}>
+                        <Badge v={row.vals[ci]} dim={row.dim[ci]} onClick={e=>cycle(ri,ci,e.shiftKey)}/>
                       </td>
                     ))}
                   </tr>
@@ -333,53 +297,44 @@ export default function App() {
         </table>
       </div>
 
-      {/* Notes Panel */}
-      {panel === "notes" && (
-        <div style={{position:"fixed", top:0, right:0, height:"100%", width:300, background:"#fff", borderLeft:"1px solid #e0e0d8", zIndex:100, display:"flex", flexDirection:"column"}}>
-          <div style={{padding:"12px 14px", borderBottom:"1px solid #e8e8e0", fontWeight:600, fontSize:13, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            CX Notes <button onClick={() => setPanel(null)} style={{background:"none", border:"none", cursor:"pointer", fontSize:16, color:"#888"}}>×</button>
+      {panel==="notes" && (
+        <div style={{position:"fixed",top:0,right:0,height:"100%",width:300,background:"#fff",borderLeft:"1px solid #e0e0d8",zIndex:100,display:"flex",flexDirection:"column"}}>
+          <div style={{padding:"12px 14px",borderBottom:"1px solid #e8e8e0",fontWeight:600,fontSize:13,display:"flex",justifyContent:"space-between"}}>
+            Notes <button onClick={()=>setPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16}}>x</button>
           </div>
-          <div style={{flex:1, overflowY:"auto", padding:"12px 14px"}}>
-            <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Type your note here..." style={{width:"100%", border:"1px solid #d0d0c8", borderRadius:6, padding:8, fontSize:12, resize:"vertical", minHeight:80}}/>
-            <button onClick={saveNote} style={{background:"#1a1a1a", color:"#fff", border:"none", borderRadius:6, padding:"7px 14px", cursor:"pointer", fontSize:12, width:"100%", marginTop:8}}>Save note</button>
-            <div style={{marginTop:16, fontWeight:600, fontSize:12, marginBottom:8}}>Saved notes</div>
-            {notes.length === 0 ? <p style={{fontSize:11, color:"#aaa"}}>No notes yet.</p> :
-              notes.map((n, i) => <div key={i} style={{background:"#fafaf8", border:"1px solid #e8e8e0", borderRadius:6, padding:8, marginBottom:8, fontSize:12}}>{n.text}<div style={{fontSize:10, color:"#999", marginTop:4}}>{n.who} · {n.ts}</div></div>)}
+          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+            <textarea value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="Type note..." style={{width:"100%",border:"1px solid #d0d0c8",borderRadius:6,padding:8,fontSize:12,minHeight:80,resize:"vertical"}}/>
+            <button onClick={()=>{if(!noteText.trim())return;setNotes(n=>[...n,{text:noteText.trim(),who:user||"Anon",ts:new Date().toLocaleString()}]);setNoteText("");}} style={{background:"#1a1a1a",color:"#fff",border:"none",borderRadius:6,padding:"7px 14px",cursor:"pointer",fontSize:12,width:"100%",marginTop:8}}>Save note</button>
+            {notes.length===0 ? <p style={{fontSize:11,color:"#aaa",marginTop:12}}>No notes yet.</p> :
+              notes.map((n,i)=><div key={i} style={{background:"#fafaf8",border:"1px solid #e8e8e0",borderRadius:6,padding:8,marginTop:8,fontSize:12}}>{n.text}<div style={{fontSize:10,color:"#999",marginTop:4}}>{n.who} - {n.ts}</div></div>)}
           </div>
         </div>
       )}
 
-      {/* Audit Panel */}
-      {panel === "audit" && (
-        <div style={{position:"fixed", top:0, right:0, height:"100%", width:300, background:"#fff", borderLeft:"1px solid #e0e0d8", zIndex:100, display:"flex", flexDirection:"column"}}>
-          <div style={{padding:"12px 14px", borderBottom:"1px solid #e8e8e0", fontWeight:600, fontSize:13, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-            Audit Log <button onClick={() => setPanel(null)} style={{background:"none", border:"none", cursor:"pointer", fontSize:16, color:"#888"}}>×</button>
+      {panel==="audit" && (
+        <div style={{position:"fixed",top:0,right:0,height:"100%",width:300,background:"#fff",borderLeft:"1px solid #e0e0d8",zIndex:100,display:"flex",flexDirection:"column"}}>
+          <div style={{padding:"12px 14px",borderBottom:"1px solid #e8e8e0",fontWeight:600,fontSize:13,display:"flex",justifyContent:"space-between"}}>
+            Audit Log <button onClick={()=>setPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16}}>x</button>
           </div>
-          <div style={{flex:1, overflowY:"auto", padding:"12px 14px"}}>
-            <button onClick={exportCSV} style={{background:"#555", color:"#fff", border:"none", borderRadius:6, padding:"7px 14px", cursor:"pointer", fontSize:12, width:"100%", marginBottom:12}}>Export CSV</button>
-            {auditLog.length === 0 ? <p style={{fontSize:11, color:"#aaa"}}>No changes logged yet.</p> :
-              [...auditLog].reverse().map((l, i) => (
-                <div key={i} style={{fontSize:11, borderBottom:"1px solid #f0f0ec", padding:"6px 0", color:"#555"}}>
-                  <b>{l.user}</b> · <b>{l.row}</b> [{l.col}]: {l.from||"blank"} → {l.to||"blank"}
-                  <br/><span style={{fontSize:10, color:"#bbb"}}>{new Date(l.ts).toLocaleString()}</span>
-                </div>
-              ))}
+          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+            <button onClick={exportCSV} style={{background:"#555",color:"#fff",border:"none",borderRadius:6,padding:"7px 14px",cursor:"pointer",fontSize:12,width:"100%",marginBottom:12}}>Export CSV</button>
+            {log.length===0 ? <p style={{fontSize:11,color:"#aaa"}}>No changes yet.</p> :
+              [...log].reverse().map((l,i)=><div key={i} style={{fontSize:11,borderBottom:"1px solid #f0f0ec",padding:"6px 0"}}><b>{l.user}</b> - {l.row} [{l.col}]: {l.from||"blank"} to {l.to||"blank"}<br/><span style={{fontSize:10,color:"#bbb"}}>{new Date(l.ts).toLocaleString()}</span></div>)}
           </div>
         </div>
       )}
 
-      {/* Save Modal */}
-      {showSave && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,.4)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center"}}>
-          <div style={{background:"#fff", borderRadius:10, padding:20, width:340, maxWidth:"95vw"}}>
-            <h3 style={{fontSize:14, fontWeight:600, marginBottom:12}}>Sign in to save changes</h3>
-            <input value={mUser} onChange={e => setMUser(e.target.value)} placeholder="Username" style={{width:"100%", border:"1px solid #d0d0c8", borderRadius:6, padding:"7px 10px", fontSize:13, marginBottom:8}}/>
-            <input type="password" value={mPass} onChange={e => setMPass(e.target.value)} placeholder="Password" style={{width:"100%", border:"1px solid #d0d0c8", borderRadius:6, padding:"7px 10px", fontSize:13, marginBottom:8}}/>
-            {mErr && <p style={{fontSize:11, color:"#c00", marginBottom:8}}>{mErr}</p>}
-            <p style={{fontSize:10, color:"#aaa", marginBottom:12}}>Demo: cx.mgr / csm.lead / admin — pass123 | admin — admin123</p>
-            <div style={{display:"flex", gap:8, justifyContent:"flex-end"}}>
-              <button onClick={() => { setShowSave(false); setPending([]); }} style={{background:"none", border:"1px solid #d0d0c8", borderRadius:6, padding:"6px 14px", cursor:"pointer", fontSize:12}}>Discard</button>
-              <button onClick={doSave} style={{background:"#1a1a1a", color:"#fff", border:"none", borderRadius:6, padding:"6px 14px", cursor:"pointer", fontSize:12}}>Sign in & save</button>
+      {saving && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{background:"#fff",borderRadius:10,padding:20,width:340}}>
+            <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>Sign in to save</h3>
+            <input value={mu} onChange={e=>setMu(e.target.value)} placeholder="Username" style={{width:"100%",border:"1px solid #d0d0c8",borderRadius:6,padding:"7px 10px",fontSize:13,marginBottom:8}}/>
+            <input type="password" value={mp} onChange={e=>setMp(e.target.value)} placeholder="Password" style={{width:"100%",border:"1px solid #d0d0c8",borderRadius:6,padding:"7px 10px",fontSize:13,marginBottom:8}}/>
+            {merr && <p style={{fontSize:11,color:"#c00",marginBottom:8}}>{merr}</p>}
+            <p style={{fontSize:10,color:"#aaa",marginBottom:12}}>cx.mgr / csm.lead / admin - pass123 | admin - admin123</p>
+            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+              <button onClick={()=>{setSaving(false);setPending([]);}} style={{background:"none",border:"1px solid #d0d0c8",borderRadius:6,padding:"6px 14px",cursor:"pointer",fontSize:12}}>Discard</button>
+              <button onClick={save} style={{background:"#1a1a1a",color:"#fff",border:"none",borderRadius:6,padding:"6px 14px",cursor:"pointer",fontSize:12}}>Sign in and save</button>
             </div>
           </div>
         </div>
