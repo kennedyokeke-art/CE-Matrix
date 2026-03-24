@@ -1,27 +1,145 @@
-import { useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CE RACI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:13px;background:#f5f5f3;color:#1a1a1a}
+#hdr{background:#fff;border-bottom:1px solid #e0e0d8;padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#hdr h1{font-size:15px;font-weight:600;flex:1}
+.hbtn{background:none;border:1px solid #d0d0c8;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px}
+.hbtn:hover{background:#f0f0ec}
+#tb{padding:10px 18px;background:#fafaf8;border-bottom:1px solid #e8e8e0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#tb label{font-size:12px;color:#666;display:flex;align-items:center;gap:6px}
+#tb select{border:1px solid #d0d0c8;border-radius:6px;padding:4px 8px;font-size:12px;background:#fff}
+#pw{padding:6px 18px;background:#fff;border-bottom:1px solid #e8e8e0;display:flex;align-items:center;gap:10px}
+#pbg{flex:1;height:6px;background:#e8e8e0;border-radius:3px;overflow:hidden}
+#pfl{height:100%;background:#7c3aed;border-radius:3px;transition:width .3s;width:0%}
+.pl{font-size:11px;color:#888;white-space:nowrap}
+#leg{display:flex;gap:8px;flex-wrap:wrap;padding:8px 18px;background:#fff;border-bottom:1px solid #e8e8e0}
+.lg{display:flex;align-items:center;gap:5px;font-size:11px;color:#555}
+#hint{font-size:10px;color:#aaa;padding:5px 18px;background:#fafaf8;border-bottom:1px solid #e8e8e0}
+#wrap{overflow-x:auto;max-height:calc(100vh - 215px)}
+table{border-collapse:collapse;width:max-content}
+th,td{border:1px solid #e0e0d8}
+.sh{position:sticky;left:0;background:#f5f5f3;z-index:3;padding:6px 10px;font-size:12px;font-weight:600;min-width:280px;max-width:280px}
+.sc{position:sticky;left:0;background:#fff;z-index:2;padding:5px 10px;font-size:12px;line-height:1.4;min-width:280px;max-width:280px}
+.rh{background:#fafaf8;text-align:center;font-size:10px;padding:6px;color:#666;min-width:80px;white-space:nowrap}
+.rlk{background:#f0eeff;color:#5b21b6;font-weight:600;text-align:center;font-size:10px;padding:6px;min-width:80px;white-space:nowrap}
+.cel{text-align:center;padding:4px 3px;min-width:80px}
+.clk{background:#f9f7ff;text-align:center;padding:4px 3px;min-width:80px}
+.bdg{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;border-radius:5px;font-weight:600;font-size:11px;cursor:pointer;border:1px solid transparent;padding:0 4px;user-select:none;transition:transform .1s}
+.bdg:hover{transform:scale(1.12)}
+.bR{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
+.bA{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd}
+.bS{background:#e1f5ee;color:#085041;border-color:#1d9e75}
+.bC{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+.bI{background:#f0fdf4;color:#166534;border-color:#86efac}
+.bRA{background:#fce7f3;color:#9d174d;border-color:#f9a8d4;font-size:10px}
+.bmt{background:#f5f5f3;color:#ccc;border-color:#e8e8e0}
+.dim{opacity:.3}
+.sr td{background:#e8e8e4;font-weight:600;font-size:11px;color:#444;padding:5px 10px;text-transform:uppercase;letter-spacing:.3px}
+.pnl{display:none;position:fixed;top:0;right:0;height:100%;width:300px;background:#fff;border-left:1px solid #e0e0d8;z-index:100;flex-direction:column}
+.pnl.open{display:flex}
+.pnh{padding:12px 14px;border-bottom:1px solid #e8e8e0;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.pnb{flex:1;overflow-y:auto;padding:12px 14px}
+.xbtn{background:none;border:none;cursor:pointer;font-size:16px;color:#888}
+textarea{width:100%;border:1px solid #d0d0c8;border-radius:6px;padding:8px;font-size:12px;resize:vertical;min-height:80px}
+.sbtn{background:#1a1a1a;color:#fff;border:none;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:12px;width:100%;margin-top:8px}
+.ni{background:#fafaf8;border:1px solid #e8e8e0;border-radius:6px;padding:8px;margin-top:8px;font-size:12px}
+.nm{font-size:10px;color:#999;margin-top:4px}
+.li{font-size:11px;border-bottom:1px solid #f0f0ec;padding:6px 0}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center}
+.ov.open{display:flex}
+.mdl{background:#fff;border-radius:10px;padding:20px;width:340px;max-width:95vw}
+.mdl h3{font-size:14px;font-weight:600;margin-bottom:12px}
+.mdl input{width:100%;border:1px solid #d0d0c8;border-radius:6px;padding:7px 10px;font-size:13px;margin-bottom:8px}
+.mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.bsec{background:none;border:1px solid #d0d0c8;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px}
+.bpri{background:#1a1a1a;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px}
+.err{font-size:11px;color:#c00;margin-bottom:8px;display:none}
+</style>
+</head>
+<body>
 
-const LOCK = 7;
-const CYCLE = ["R","A","S","C","I","RA",""];
-const KEYS = ["CX Dir","CX Mgr","CSM","Tech/Ops","Engineering","Product","Finance","Leadership"];
+<div id="hdr">
+  <h1>CE - Customer Experience RACI</h1>
+  <button class="hbtn" onclick="togglePanel('notes')">Notes</button>
+  <button class="hbtn" onclick="togglePanel('audit')">Audit Log (<span id="lc">0</span>)</button>
+  <button class="hbtn" onclick="openSave()">Save changes</button>
+</div>
 
-const BS = {
-  R:  {bg:"#dbeafe",color:"#1e40af",border:"#93c5fd"},
-  A:  {bg:"#ede9fe",color:"#5b21b6",border:"#c4b5fd"},
-  S:  {bg:"#e1f5ee",color:"#085041",border:"#1d9e75"},
-  C:  {bg:"#fef3c7",color:"#92400e",border:"#fcd34d"},
-  I:  {bg:"#f0fdf4",color:"#166534",border:"#86efac"},
-  RA: {bg:"#fce7f3",color:"#9d174d",border:"#f9a8d4"},
-  "": {bg:"#f5f5f3",color:"#ccc",   border:"#e8e8e0"},
-};
+<div id="tb">
+  <label>Area: <select id="cf" onchange="render()"><option value="">All areas</option></select></label>
+  <label>Stakeholder: <select id="rf" onchange="render()"><option value="">All stakeholders</option></select></label>
+</div>
 
-const AREAS = [
+<div id="pw">
+  <span class="pl" id="pla">Completion: 0%</span>
+  <div id="pbg"><div id="pfl"></div></div>
+  <span class="pl" id="pco">0 / 0</span>
+</div>
+
+<div id="leg">
+  <span class="lg"><span class="bdg bR">R</span> Responsible</span>
+  <span class="lg"><span class="bdg bA">A</span> Accountable</span>
+  <span class="lg"><span class="bdg bS">S</span> Supporting</span>
+  <span class="lg"><span class="bdg bC">C</span> Consulted</span>
+  <span class="lg"><span class="bdg bI">I</span> Informed</span>
+  <span class="lg"><span class="bdg bRA">R/A</span> Resp + Accountable</span>
+</div>
+<div id="hint">Click any cell to cycle role - Shift+click to dim - Leadership locked as Accountable</div>
+
+<div id="wrap"><table id="tbl"></table></div>
+
+<div class="pnl" id="pnl-notes">
+  <div class="pnh">Notes <button class="xbtn" onclick="togglePanel('notes')">x</button></div>
+  <div class="pnb">
+    <textarea id="ntxt" placeholder="Type your note here..."></textarea>
+    <button class="sbtn" onclick="saveNote()">Save note</button>
+    <div style="margin-top:16px;font-weight:600;font-size:12px;margin-bottom:4px">Saved notes</div>
+    <div id="nlist"><p style="font-size:11px;color:#aaa">No notes yet.</p></div>
+  </div>
+</div>
+
+<div class="pnl" id="pnl-audit">
+  <div class="pnh">Audit Log <button class="xbtn" onclick="togglePanel('audit')">x</button></div>
+  <div class="pnb">
+    <button class="sbtn" style="background:#555;margin-bottom:12px" onclick="doExport()">Export CSV</button>
+    <div id="alist"><p style="font-size:11px;color:#aaa">No changes logged yet.</p></div>
+  </div>
+</div>
+
+<div class="ov" id="smod">
+  <div class="mdl">
+    <h3>Sign in to save changes</h3>
+    <input type="text" id="mu" placeholder="Username"/>
+    <input type="password" id="mp" placeholder="Password"/>
+    <p class="err" id="merr"></p>
+    <p style="font-size:10px;color:#aaa;margin-bottom:8px">cx.mgr / csm.lead - pass123 | admin - admin123</p>
+    <div class="mbtns">
+      <button class="bsec" onclick="closeSave()">Discard</button>
+      <button class="bpri" onclick="doSave()">Sign in and save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var CYCLE = ["R","A","S","C","I","RA",""];
+var LOCK  = 7;
+var KEYS  = ["CX Dir","CX Mgr","CSM","Tech/Ops","Engineering","Product","Finance","Leadership"];
+var ACC   = {"cx.mgr":"pass123","csm.lead":"pass123","admin":"admin123"};
+
+var AREAS = [
   ["Environments Server and Hosting Data",[
     "Maintain CMDB as single source of truth for customer environments",
     "Record hosted and on-prem environment data",
     "Sync customer master from Salesforce to JSM",
     "Manage environment data lifecycle",
     "Reconstruct Bouncer URI from environment data",
-    "Provide environment selection on case submission",
+    "Provide environment selection on case submission"
   ]],
   ["Major Incident Management and Customer Communication",[
     "Declare and manage major incidents in JSM",
@@ -29,7 +147,7 @@ const AREAS = [
     "Publish and maintain customer-facing status page",
     "Surface active incidents on customer portal",
     "Bulk-update and close linked cases on incident resolution",
-    "Conduct post-incident review",
+    "Conduct post-incident review"
   ]],
   ["Patching Management",[
     "Receive and manage patching requests via Jira",
@@ -37,40 +155,40 @@ const AREAS = [
     "Coordinate patch deployment via Bouncer and ring master",
     "Generate and distribute release notes per patch",
     "Update CMDB with patch outcome",
-    "Communicate patching windows and outcomes to customers",
+    "Communicate patching windows and outcomes to customers"
   ]],
   ["Bouncer",[
     "Launch Bouncer connection from case or portal via Power Apps",
     "Construct and encrypt connection URI from CMDB environment data",
     "Authenticate associate access via role-based permissions",
     "Log and audit all Bouncer connection activity",
-    "Support password reveal for authorised roles",
+    "Support password reveal for authorised roles"
   ]],
   ["CSM Activity Tracking",[
     "Log CSM interactions and activities against customer accounts",
     "Track and report CSM activity volumes and outcomes",
     "Escalate at-risk accounts identified during activity review",
-    "Set and monitor CSM activity targets",
+    "Set and monitor CSM activity targets"
   ]],
   ["Release Notes",[
     "Engineering generates release note artifact per patch",
     "Store release notes in Jira linked to patch",
     "Publish release notes to customer portal filtered by entitlement",
     "Notify relevant customers when release notes are available",
-    "Allow customers to subscribe to and view their release notes",
+    "Allow customers to subscribe to and view their release notes"
   ]],
   ["User Change Requests",[
     "Customer submits user change request via portal",
     "Route request to Nelson via API automated zero-touch",
     "Confirm completion and notify customer",
-    "Audit and log all user change requests",
+    "Audit and log all user change requests"
   ]],
   ["Entitlements",[
     "Auto-assign SLA entitlement to case on creation",
     "Define SLA milestones per entitlement",
     "Manage entitlements for financier-sold products",
     "Review and validate entitlements at renewal or contract change",
-    "Report on entitlement usage and SLA performance",
+    "Report on entitlement usage and SLA performance"
   ]],
   ["Case Management",[
     "Log and triage cases from all intake channels",
@@ -80,265 +198,193 @@ const AREAS = [
     "Swarm on complex cases and escalate internally",
     "Link cases to Jira for defect or infrastructure resolution",
     "Track and report case trends and SLA performance",
-    "Support third-party and partner case access",
+    "Support third-party and partner case access"
   ]],
   ["Associate Portal",[
     "Allow internal users without Salesforce licence to create and manage cases",
     "Provide access to customer account and environment data for associates",
     "Enable Bouncer launch for associates without full Salesforce access",
-    "Govern associate access by role and persona",
+    "Govern associate access by role and persona"
   ]],
   ["Advanced Resource Planning",[
     "Forecast customer support demand by volume and skill",
     "Allocate CSM and analyst capacity against forecast",
     "Manage skill definitions and Omni-Channel skill assignments",
-    "Report on resource utilisation and capacity gaps",
+    "Report on resource utilisation and capacity gaps"
   ]],
   ["Remediation Management",[
     "Flag remediation opportunity at case closure",
     "Create and link remediation records to support cases",
     "Analyse remediation volume and cost by product and market",
     "Collaborate with Product Engineering and PS to resolve root causes",
-    "Track remediation outcomes and case reduction impact",
+    "Track remediation outcomes and case reduction impact"
   ]],
   ["SR Bookings",[
     "Log outbound appointment bookings for managed service team",
     "Record booking outcomes attended no-show rebooked",
     "Lock booking records after 4-day outcome window",
-    "Report booking volumes and outcomes to customers",
+    "Report booking volumes and outcomes to customers"
   ]],
   ["Vendor Licences",[
     "Record third-party licence requirements per product",
     "Procure vendor licences at point of customer onboarding",
     "Audit licence usage against active customer base",
     "Cancel or transfer licences on customer offboarding",
-    "Report licence costs per product for margin analysis",
+    "Report licence costs per product for margin analysis"
   ]],
   ["Escalation Management",[
     "Receive and log customer escalation",
     "Assess escalation severity and route to appropriate owner",
     "Coordinate cross-functional escalation response",
     "Communicate updates and resolution to customer",
-    "Conduct escalation retrospective and feed learnings into remediation",
+    "Conduct escalation retrospective and feed learnings into remediation"
   ]],
   ["CSM Risk Management",[
     "Identify at-risk accounts via CSM activity case trends and NPS data",
     "Log and maintain risk register per account",
     "Define and track risk mitigation actions",
     "Report risk status to leadership",
-    "Evaluate tooling for CSM and risk platform",
+    "Evaluate tooling for CSM and risk platform"
   ]],
   ["Service Credits",[
     "Identify service credit eligibility based on SLA breach",
     "Calculate credit value against contract terms",
     "Obtain approval and apply credit to customer account",
-    "Notify customer and record credit in reporting",
-  ]],
+    "Notify customer and record credit in reporting"
+  ]]
 ];
 
-function buildRows() {
-  const out = [];
-  AREAS.forEach(([cat, steps]) => steps.forEach(name => out.push({
-    cat, name,
-    vals: KEYS.map((_, i) => i === LOCK ? "A" : ""),
-    dim:  KEYS.map(() => false),
-  })));
-  return out;
+var rows = [];
+AREAS.forEach(function(a){
+  a[1].forEach(function(s){
+    rows.push({
+      cat:a[0], name:s,
+      vals:KEYS.map(function(_,i){return i===LOCK?"A":""}),
+      dim:KEYS.map(function(){return false})
+    });
+  });
+});
+
+var auditLog=[], notes=[], pending=[], curUser=null;
+
+function init(){
+  var cf=document.getElementById("cf");
+  var rf=document.getElementById("rf");
+  AREAS.forEach(function(a){
+    var o=document.createElement("option");
+    o.value=a[0];o.textContent=a[0];cf.appendChild(o);
+  });
+  KEYS.forEach(function(k){
+    var o=document.createElement("option");
+    o.value=k;o.textContent=k;rf.appendChild(o);
+  });
+  render();
 }
 
-function Badge({ v, dim, onClick }) {
-  const s = BS[v] || BS[""];
-  return (
-    <span onClick={onClick} style={{
-      display:"inline-flex", alignItems:"center", justifyContent:"center",
-      minWidth:26, height:22, borderRadius:5, fontWeight:600,
-      fontSize: v === "RA" ? 10 : 11, cursor:"pointer",
-      border:"1px solid "+s.border, padding:"0 4px", userSelect:"none",
-      background:s.bg, color:s.color, opacity: dim ? 0.3 : 1,
-    }}>{v || "·"}</span>
-  );
+function cycleCell(ri,ci,shift){
+  if(ci===LOCK)return;
+  if(shift){rows[ri].dim[ci]=!rows[ri].dim[ci];render();return;}
+  var cur=rows[ri].vals[ci];
+  var nxt=CYCLE[(CYCLE.indexOf(cur)+1)%CYCLE.length];
+  pending.push({row:rows[ri].name,col:KEYS[ci],from:cur,to:nxt,ts:new Date().toISOString()});
+  rows[ri].vals[ci]=nxt;
+  render();
 }
 
-export default function App() {
-  const [rows, setRows]         = useState(buildRows);
-  const [catF, setCatF]         = useState("");
-  const [roleF, setRoleF]       = useState("");
-  const [panel, setPanel]       = useState(null);
-  const [noteText, setNoteText] = useState("");
-  const [notes, setNotes]       = useState([]);
-  const [log, setLog]           = useState([]);
-  const [pending, setPending]   = useState([]);
-  const [user, setUser]         = useState(null);
-  const [saving, setSaving]     = useState(false);
-  const [mu, setMu]             = useState("");
-  const [mp, setMp]             = useState("");
-  const [merr, setMerr]         = useState("");
-
-  const cycle = (ri, ci, shift) => {
-    if (ci === LOCK) return;
-    setRows(prev => prev.map((r, i) => {
-      if (i !== ri) return r;
-      const nv = [...r.vals], nd = [...r.dim];
-      if (shift) { nd[ci] = !nd[ci]; }
-      else {
-        const nx = CYCLE[(CYCLE.indexOf(nv[ci]) + 1) % CYCLE.length];
-        setPending(p => [...p, {row:r.name, col:KEYS[ci], from:nv[ci], to:nx, ts:new Date().toISOString()}]);
-        nv[ci] = nx;
-      }
-      return {...r, vals:nv, dim:nd};
-    }));
-  };
-
-  const save = () => {
-    const acc = {"cx.mgr":"pass123","csm.lead":"pass123","admin":"admin123"};
-    if (!acc[mu] || acc[mu] !== mp) { setMerr("Invalid username or password."); return; }
-    setUser(mu);
-    setLog(l => [...l, ...pending.map(p => ({...p, user:mu}))]);
-    setPending([]); setSaving(false); setMu(""); setMp(""); setMerr("");
-    alert("Changes saved and logged!");
-  };
-
-  const exportCSV = () => {
-    const lines = ["User,Step,Role,From,To,Time",
-      ...log.map(l => [l.user, '"'+l.row+'"', l.col, l.from||"blank", l.to||"blank", l.ts].join(","))];
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));
-    a.download = "ce_raci.csv"; a.click();
-  };
-
-  const total  = rows.length * (KEYS.length - 1);
-  const filled = rows.reduce((s,r) => s + r.vals.filter((v,i) => i!==LOCK && v).length, 0);
-  const pct    = total ? Math.round(filled/total*100) : 0;
-  const vr     = KEYS.filter(k => !roleF || k === roleF);
-  const vrows  = rows.filter(r => !catF || r.cat === catF);
-  const cats   = [...new Set(AREAS.map(a => a[0]))];
-
-  const sel  = {border:"1px solid #d0d0c8",borderRadius:6,padding:"4px 8px",fontSize:12,background:"#fff"};
-  const hbtn = {background:"none",border:"1px solid #d0d0c8",borderRadius:6,padding:"5px 11px",cursor:"pointer",fontSize:12};
-  const thS  = (lk) => ({background:lk?"#f0eeff":"#fafaf8",textAlign:"center",fontSize:10,padding:"6px",color:lk?"#5b21b6":"#666",fontWeight:lk?600:400,border:"1px solid #e0e0d8",minWidth:80,whiteSpace:"nowrap"});
-  const tdS  = (lk) => ({textAlign:"center",padding:"4px 3px",minWidth:80,border:"1px solid #e0e0d8",background:lk?"#f9f7ff":"transparent"});
-  const stkyH = {position:"sticky",left:0,background:"#f5f5f3",zIndex:3,padding:"6px 10px",fontSize:12,fontWeight:600,border:"1px solid #e0e0d8",minWidth:280,maxWidth:280};
-  const stkyC = {position:"sticky",left:0,background:"#fff",zIndex:2,padding:"5px 10px",fontSize:12,lineHeight:1.4,border:"1px solid #e0e0d8",minWidth:280,maxWidth:280};
-  const secR  = {background:"#e8e8e4",fontWeight:600,fontSize:11,color:"#444",padding:"5px 10px",textTransform:"uppercase",letterSpacing:".3px"};
-
-  let lastCat = null;
-
-  return (
-    <div style={{fontFamily:"system-ui,sans-serif",fontSize:13,background:"#f5f5f3",minHeight:"100vh"}}>
-
-      <div style={{background:"#fff",borderBottom:"1px solid #e0e0d8",padding:"10px 18px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-        <span style={{fontWeight:600,fontSize:15,flex:1}}>CE - Customer Experience RACI</span>
-        <button style={hbtn} onClick={() => setPanel(panel==="notes"?null:"notes")}>Notes</button>
-        <button style={hbtn} onClick={() => setPanel(panel==="audit"?null:"audit")}>Audit ({log.length})</button>
-        <button style={hbtn} onClick={() => { if(!pending.length){alert("No changes to save.");return;} setSaving(true);setMerr(""); }}>Save changes</button>
-      </div>
-
-      <div style={{padding:"10px 18px",background:"#fafaf8",borderBottom:"1px solid #e8e8e0",display:"flex",gap:12,alignItems:"center",flexWrap:"wrap"}}>
-        <label style={{fontSize:12,color:"#666",display:"flex",alignItems:"center",gap:6}}>Area:
-          <select style={sel} value={catF} onChange={e=>setCatF(e.target.value)}>
-            <option value="">All areas</option>
-            {cats.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
-        <label style={{fontSize:12,color:"#666",display:"flex",alignItems:"center",gap:6}}>Stakeholder:
-          <select style={sel} value={roleF} onChange={e=>setRoleF(e.target.value)}>
-            <option value="">All stakeholders</option>
-            {KEYS.map(k=><option key={k} value={k}>{k}</option>)}
-          </select>
-        </label>
-      </div>
-
-      <div style={{padding:"6px 18px",background:"#fff",borderBottom:"1px solid #e8e8e0",display:"flex",alignItems:"center",gap:10}}>
-        <span style={{fontSize:11,color:"#888"}}>{pct}% complete</span>
-        <div style={{flex:1,height:6,background:"#e8e8e0",borderRadius:3,overflow:"hidden"}}>
-          <div style={{height:"100%",width:pct+"%",background:"#7c3aed",borderRadius:3}}/>
-        </div>
-        <span style={{fontSize:11,color:"#888"}}>{filled}/{total}</span>
-      </div>
-
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",padding:"8px 18px",background:"#fff",borderBottom:"1px solid #e8e8e0"}}>
-        {Object.entries(BS).filter(([k])=>k).map(([k,s])=>(
-          <span key={k} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:"#555"}}>
-            <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:26,height:22,borderRadius:5,fontWeight:600,fontSize:k==="RA"?10:11,border:"1px solid "+s.border,padding:"0 4px",background:s.bg,color:s.color}}>{k}</span>
-            {k==="R"?"Responsible":k==="A"?"Accountable":k==="S"?"Supporting":k==="C"?"Consulted":k==="I"?"Informed":"Resp + Accountable"}
-          </span>
-        ))}
-      </div>
-      <div style={{fontSize:10,color:"#aaa",padding:"5px 18px",background:"#fafaf8",borderBottom:"1px solid #e8e8e0"}}>Click to cycle - Shift+click to dim - Leadership locked as Accountable</div>
-
-      <div style={{overflowX:"auto",maxHeight:"calc(100vh - 210px)"}}>
-        <table style={{borderCollapse:"collapse",width:"max-content"}}>
-          <thead>
-            <tr>
-              <th style={stkyH}>Process Step</th>
-              {KEYS.map((k,i)=> vr.includes(k) && <th key={k} style={thS(i===LOCK)}>{k}{i===LOCK?" (A)":""}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {vrows.map((row, vi) => {
-              const ri = rows.indexOf(row);
-              const newCat = row.cat !== lastCat;
-              lastCat = row.cat;
-              return (
-                <React.Fragment key={ri}>
-                  {newCat && <tr><td colSpan={1+vr.length} style={secR}>{row.cat}</td></tr>}
-                  <tr>
-                    <td style={stkyC}>{row.name}</td>
-                    {KEYS.map((k,ci)=> vr.includes(k) && (
-                      <td key={ci} style={tdS(ci===LOCK)}>
-                        <Badge v={row.vals[ci]} dim={row.dim[ci]} onClick={e=>cycle(ri,ci,e.shiftKey)}/>
-                      </td>
-                    ))}
-                  </tr>
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {panel==="notes" && (
-        <div style={{position:"fixed",top:0,right:0,height:"100%",width:300,background:"#fff",borderLeft:"1px solid #e0e0d8",zIndex:100,display:"flex",flexDirection:"column"}}>
-          <div style={{padding:"12px 14px",borderBottom:"1px solid #e8e8e0",fontWeight:600,fontSize:13,display:"flex",justifyContent:"space-between"}}>
-            Notes <button onClick={()=>setPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16}}>x</button>
-          </div>
-          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
-            <textarea value={noteText} onChange={e=>setNoteText(e.target.value)} placeholder="Type note..." style={{width:"100%",border:"1px solid #d0d0c8",borderRadius:6,padding:8,fontSize:12,minHeight:80,resize:"vertical"}}/>
-            <button onClick={()=>{if(!noteText.trim())return;setNotes(n=>[...n,{text:noteText.trim(),who:user||"Anon",ts:new Date().toLocaleString()}]);setNoteText("");}} style={{background:"#1a1a1a",color:"#fff",border:"none",borderRadius:6,padding:"7px 14px",cursor:"pointer",fontSize:12,width:"100%",marginTop:8}}>Save note</button>
-            {notes.length===0 ? <p style={{fontSize:11,color:"#aaa",marginTop:12}}>No notes yet.</p> :
-              notes.map((n,i)=><div key={i} style={{background:"#fafaf8",border:"1px solid #e8e8e0",borderRadius:6,padding:8,marginTop:8,fontSize:12}}>{n.text}<div style={{fontSize:10,color:"#999",marginTop:4}}>{n.who} - {n.ts}</div></div>)}
-          </div>
-        </div>
-      )}
-
-      {panel==="audit" && (
-        <div style={{position:"fixed",top:0,right:0,height:"100%",width:300,background:"#fff",borderLeft:"1px solid #e0e0d8",zIndex:100,display:"flex",flexDirection:"column"}}>
-          <div style={{padding:"12px 14px",borderBottom:"1px solid #e8e8e0",fontWeight:600,fontSize:13,display:"flex",justifyContent:"space-between"}}>
-            Audit Log <button onClick={()=>setPanel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:16}}>x</button>
-          </div>
-          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
-            <button onClick={exportCSV} style={{background:"#555",color:"#fff",border:"none",borderRadius:6,padding:"7px 14px",cursor:"pointer",fontSize:12,width:"100%",marginBottom:12}}>Export CSV</button>
-            {log.length===0 ? <p style={{fontSize:11,color:"#aaa"}}>No changes yet.</p> :
-              [...log].reverse().map((l,i)=><div key={i} style={{fontSize:11,borderBottom:"1px solid #f0f0ec",padding:"6px 0"}}><b>{l.user}</b> - {l.row} [{l.col}]: {l.from||"blank"} to {l.to||"blank"}<br/><span style={{fontSize:10,color:"#bbb"}}>{new Date(l.ts).toLocaleString()}</span></div>)}
-          </div>
-        </div>
-      )}
-
-      {saving && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <div style={{background:"#fff",borderRadius:10,padding:20,width:340}}>
-            <h3 style={{fontSize:14,fontWeight:600,marginBottom:12}}>Sign in to save</h3>
-            <input value={mu} onChange={e=>setMu(e.target.value)} placeholder="Username" style={{width:"100%",border:"1px solid #d0d0c8",borderRadius:6,padding:"7px 10px",fontSize:13,marginBottom:8}}/>
-            <input type="password" value={mp} onChange={e=>setMp(e.target.value)} placeholder="Password" style={{width:"100%",border:"1px solid #d0d0c8",borderRadius:6,padding:"7px 10px",fontSize:13,marginBottom:8}}/>
-            {merr && <p style={{fontSize:11,color:"#c00",marginBottom:8}}>{merr}</p>}
-            <p style={{fontSize:10,color:"#aaa",marginBottom:12}}>cx.mgr / csm.lead / admin - pass123 | admin - admin123</p>
-            <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-              <button onClick={()=>{setSaving(false);setPending([]);}} style={{background:"none",border:"1px solid #d0d0c8",borderRadius:6,padding:"6px 14px",cursor:"pointer",fontSize:12}}>Discard</button>
-              <button onClick={save} style={{background:"#1a1a1a",color:"#fff",border:"none",borderRadius:6,padding:"6px 14px",cursor:"pointer",fontSize:12}}>Sign in and save</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function render(){
+  var catF=document.getElementById("cf").value;
+  var roleF=document.getElementById("rf").value;
+  var vr=KEYS.filter(function(k){return !roleF||k===roleF;});
+  var html="<thead><tr><th class='sh'>Process Step</th>";
+  KEYS.forEach(function(k,i){
+    if(!roleF||k===roleF){
+      html+="<th class='"+(i===LOCK?"rlk":"rh")+"'>"+k+(i===LOCK?" (A)":"")+"</th>";
+    }
+  });
+  html+="</tr></thead><tbody>";
+  var lastCat=null;
+  rows.forEach(function(row,ri){
+    if(catF&&row.cat!==catF)return;
+    if(row.cat!==lastCat){
+      html+="<tr class='sr'><td colspan='"+(1+vr.length)+"'>"+row.cat+"</td></tr>";
+      lastCat=row.cat;
+    }
+    html+="<tr><td class='sc'>"+row.name+"</td>";
+    KEYS.forEach(function(k,ci){
+      if(roleF&&k!==roleF)return;
+      var v=rows[ri].vals[ci];
+      var d=rows[ri].dim[ci];
+      var lk=(ci===LOCK);
+      var bc=v?"b"+v:"bmt";
+      var dc=d?" dim":"";
+      var dot=v?v:"·";
+      var b=lk
+        ?"<span class='bdg bA"+dc+"'>A</span>"
+        :"<span class='bdg "+bc+dc+"' onclick='cycleCell("+ri+","+ci+",event.shiftKey)'>"+dot+"</span>";
+      html+="<td class='"+(lk?"clk":"cel")+"'>"+b+"</td>";
+    });
+    html+="</tr>";
+  });
+  html+="</tbody>";
+  document.getElementById("tbl").innerHTML=html;
+  var total=rows.length*(KEYS.length-1);
+  var filled=0;
+  rows.forEach(function(r){r.vals.forEach(function(v,i){if(i!==LOCK&&v)filled++;});});
+  var pct=total?Math.round(filled/total*100):0;
+  document.getElementById("pfl").style.width=pct+"%";
+  document.getElementById("pla").textContent="Completion: "+pct+"%";
+  document.getElementById("pco").textContent=filled+" / "+total;
 }
+
+function togglePanel(id){
+  ["notes","audit"].forEach(function(p){
+    var el=document.getElementById("pnl-"+p);
+    if(p===id)el.classList.toggle("open");else el.classList.remove("open");
+  });
+}
+
+function saveNote(){
+  var txt=document.getElementById("ntxt").value.trim();
+  if(!txt)return;
+  notes.push({text:txt,who:curUser||"Anonymous",ts:new Date().toLocaleString()});
+  document.getElementById("ntxt").value="";
+  var el=document.getElementById("nlist");
+  el.innerHTML=notes.map(function(n){
+    return "<div class='ni'>"+n.text+"<div class='nm'>"+n.who+" - "+n.ts+"</div></div>";
+  }).join("");
+}
+
+function openSave(){
+  if(!pending.length){alert("No changes to save.");return;}
+  document.getElementById("merr").style.display="none";
+  document.getElementById("smod").classList.add("open");
+}
+function closeSave(){document.getElementById("smod").classList.remove("open");pending=[];}
+function doSave(){
+  var u=document.getElementById("mu").value.trim();
+  var p=document.getElementById("mp").value;
+  var err=document.getElementById("merr");
+  if(!ACC[u]||ACC[u]!==p){err.textContent="Invalid username or password.";err.style.display="block";return;}
+  curUser=u;
+  pending.forEach(function(c){auditLog.push({user:u,row:c.row,col:c.col,from:c.from,to:c.to,ts:c.ts});});
+  pending=[];
+  document.getElementById("lc").textContent=auditLog.length;
+  var el=document.getElementById("alist");
+  el.innerHTML=auditLog.slice().reverse().map(function(l){
+    return "<div class='li'><b>"+l.user+"</b> - "+l.row+" ["+l.col+"]: "+(l.from||"blank")+" to "+(l.to||"blank")+"<br><span style='font-size:10px;color:#bbb'>"+new Date(l.ts).toLocaleString()+"</span></div>";
+  }).join("");
+  closeSave();
+  alert("Changes saved and logged!");
+}
+function doExport(){
+  var lines=["User,Step,Role,From,To,Time"];
+  auditLog.forEach(function(l){lines.push([l.user,'"'+l.row+'"',l.col,l.from||"blank",l.to||"blank",l.ts].join(","));});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));
+  a.download="ce_raci.csv";a.click();
+}
+
+init();
+</script>
+</body>
+</html>
